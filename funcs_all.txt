@@ -16,6 +16,7 @@
 "fade_out_frame",
 "SDL_Delay",
 "SDL_UpdateMouseFocus",
+"SDL_RenderPresent",
 "GLES2_RenderPresent",
 "Emscripten_GLES_SwapWindow",
 "Emscripten_HandleMouseMove",
