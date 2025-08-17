@@ -3,6 +3,8 @@ project(SDLPoP)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=gnu99 -fno-rtti -fno-exceptions -flto -O3")
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror=implicit-function-declaration")
+
 # have CMake output binaries to the directory that contains the source files
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${SDLPoP_SOURCE_DIR}/..")
 
@@ -91,7 +93,7 @@ else()
     # NOTE: Currently, the SDL2 and SDL2_image frameworks are not being correctly included/linked in the bundle!
     #       As long as this isn't fixed, these bundles will only work if SDL2 and SDL2_image are installed.
 
-    set (SDLPoP_VERSION "1.23")
+    set (SDLPoP_VERSION "1.24 RC")
     set (MACOSX_BUNDLE_INFO_STRING          ${PROJECT_NAME})
     set (MACOSX_BUNDLE_ICON_FILE            "icon.icns")
     set_source_files_properties(${MACOSX_BUNDLE_ICON_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
@@ -117,6 +119,22 @@ if(WIN32)
     target_link_libraries(prince mingw32 SDL2main SDL2 SDL2_image)
 elseif(APPLE)
     target_link_libraries(prince SDL2main SDL2 SDL2_image m)
-else() # Linux, *BSD, etc.
-    target_link_libraries(prince SDL2 SDL2_image m)
+elseif(PSP) # Linux, *BSD, etc.
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+	include(FindPkgConfig)
+	pkg_search_module(SDL2 REQUIRED sdl2)
+	pkg_search_module(SDL2IMAGE REQUIRED SDL2_image)
+	target_include_directories(prince PRIVATE ${SDL2_INCLUDE_DIRS})
+	target_link_libraries(prince PRIVATE
+	${SDL2_LIBRARIES} ${SDL2IMAGE_LIBRARIES}
+	)
+	create_pbp_file(
+		TARGET prince
+		ICON_PATH ${CMAKE_SOURCE_DIR}/iconPSP.png
+		BACKGROUND_PATH NULL
+		PREVIEW_PATH NULL
+		TITLE prince
+	)
+else()
+    	target_link_libraries(prince SDL2 SDL2_image m)
 endif()

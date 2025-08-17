@@ -1,6 +1,6 @@
 /*
 SDLPoP, a port/conversion of the DOS game Prince of Persia.
-Copyright (C) 2013-2023  Dávid Nagy
+Copyright (C) 2013-2025  Dávid Nagy
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -489,6 +489,9 @@ void save_level_screenshot(bool want_extras) {
 	}
 	xpos[drawn_room] = 0;
 	ypos[drawn_room] = 0;
+	// Mark the current room as processed so we don't add it later again.
+	// Otherwise, if the level has NUMBER_OF_ROOMS rooms, the queue will eventually contain NUMBER_OF_ROOMS+1 items, overflowing the array.
+	processed[drawn_room] = true;
 	int queue[NUMBER_OF_ROOMS] = {drawn_room}; // We start mapping from the current room.
 	int queue_start = 0;
 	int queue_end = 1;
@@ -506,6 +509,8 @@ void save_level_screenshot(bool want_extras) {
 				xpos[other_room] = other_x;
 				ypos[other_room] = other_y;
 				processed[other_room] = true;
+				printf("Adding room %d to map.\n", other_room);
+				if (queue_end >= NUMBER_OF_ROOMS) { printf("Queue overflow!\n"); break; }
 				queue[queue_end] = other_room;
 				queue_end++;
 			}
@@ -578,7 +583,7 @@ void save_level_screenshot(bool want_extras) {
 	int image_width = map_width*320;
 	int image_height = map_height*189+3+8;
 
-	SDL_Surface* map_surface = SDL_CreateRGBSurface(0, image_width, image_height, 32, 0xFF, 0xFF<<8, 0xFF<<16, 0xFFu<<24);
+	SDL_Surface* map_surface = SDL_CreateRGBSurface(0, image_width, image_height, 32, Rmsk, Gmsk, Bmsk, Amsk);
 	if (map_surface == NULL) {
 		sdlperror("SDL_CreateRGBSurface (map_surface)");
 		//exit(1);

@@ -1,6 +1,6 @@
 /*
 SDLPoP, a port/conversion of the DOS game Prince of Persia.
-Copyright (C) 2013-2023  Dávid Nagy
+Copyright (C) 2013-2025  Dávid Nagy
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -37,6 +37,18 @@ The authors of this program may be contacted at https://forum.princed.org
 
 #if SDL_BYTEORDER != SDL_LIL_ENDIAN
 //#error This program is not (yet) prepared for big endian CPUs, please contact the author.
+#endif
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+  #define Rmsk 0x00ff0000
+  #define Gmsk 0x0000ff00
+  #define Bmsk 0x000000ff
+  #define Amsk 0xff000000
+#else
+  #define Rmsk 0x000000ff
+  #define Gmsk 0x0000ff00
+  #define Bmsk 0x00ff0000
+  #define Amsk 0xff000000
 #endif
 
 // This macro is from SDL_types.h / SDL_stdinc.h .
@@ -570,7 +582,7 @@ typedef struct ogg_type {
 
 typedef struct converted_audio_type {
 	int length;
-	short samples[];
+	short * samples; //FIXME: crash in PSP when using flexible arrays (??)
 } converted_audio_type;
 
 typedef struct sound_buffer_type {
@@ -1185,7 +1197,10 @@ names_list_type listname##_list = {.type=0, .names = {&listname, COUNT(listname)
 #define KEY_VALUE_LIST(listname, ...) const key_value_type listname[] = __VA_ARGS__; \
 names_list_type listname##_list = {.type=1, .kv_pairs= {(key_value_type*)&listname, COUNT(listname)}}
 
+//misaligned data == CRASH!! on PSP
+#ifndef __PSP__
 #pragma pack(push,1)
+#endif
 typedef struct fixes_options_type {
 	byte enable_crouch_after_climbing;
 	byte enable_freeze_time_during_end_music;
@@ -1231,6 +1246,7 @@ typedef struct fixes_options_type {
 	byte fix_falling_through_floor_during_sword_strike;
 	byte enable_jump_grab;
 	byte fix_register_quick_input;
+	byte fix_turn_running_near_wall;
 } fixes_options_type;
 
 #define NUM_GUARD_SKILLS 12
@@ -1343,8 +1359,11 @@ typedef struct custom_options_type {
 	byte fight_speed;
 	byte chomper_speed;
 
+	byte no_mouse_in_ending;
 } custom_options_type;
+#ifndef __PSP__
 #pragma pack(pop)
+#endif
 
 typedef struct directory_listing_type directory_listing_type;
 
@@ -1398,8 +1417,8 @@ enum
 enum
 {
 	EDGE_TYPE_CLOSER, // closer/sword/potion
-	EDGE_TYPE_EDGE, // edge
-	EDGE_TYPE_FLOOR, // floor (nothing near char)
+	EDGE_TYPE_WALL,   // wall/gate/tapestry/mirror/chomper
+	EDGE_TYPE_FLOOR,  // floor (nothing near char)
 };
 
 #define TILE_SIZEX 14 // Horizontal size of tile in the internal coordinate system (a tile is 32 pixels wide in screen space)

@@ -1,6 +1,6 @@
 /*
 SDLPoP, a port/conversion of the DOS game Prince of Persia.
-Copyright (C) 2013-2023  Dávid Nagy
+Copyright (C) 2013-2025  Dávid Nagy
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -591,7 +591,14 @@ void play_seq() {
 				}
 				// fallthrough!
 			case SEQ_JMP: // jump
+				#ifdef __PSP__
+				word command1 = (word)*(SEQTBL_0 + Char.curr_seq);
+				word command2 =  (word)*(SEQTBL_0 + Char.curr_seq+1);
+				//for some reason, this works, but normal pointer cast crashes (?)
+				Char.curr_seq = SDL_SwapLE16(command1 | (command2<<8));
+				#else
 				Char.curr_seq = SDL_SwapLE16(*(const word*)(SEQTBL_0 + Char.curr_seq));
+				#endif
 				break;
 			case SEQ_UP: // up
 				--Char.curr_row;

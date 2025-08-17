@@ -1,6 +1,6 @@
 /*
 SDLPoP, a port/conversion of the DOS game Prince of Persia.
-Copyright (C) 2013-2023  Dávid Nagy
+Copyright (C) 2013-2025  Dávid Nagy
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -686,6 +686,7 @@ extern word justblocked; // name from Apple II source
 extern word last_loose_sound;
 
 extern int last_key_scancode;
+extern int last_any_key_scancode; // for showmessage_any_key
 #ifdef USE_TEXT
 extern font_type hc_font INIT(= {0x01,0xFF, 7,2,1,1, NULL});
 extern textstate_type textstate INIT(= {0,0,0,15,&hc_font});
@@ -710,9 +711,15 @@ extern byte is_validate_mode;
 extern dword curr_tick INIT(= 0);
 #endif // USE_REPLAY
 
+#ifdef __PSP__
+extern byte start_fullscreen INIT(= 1);
+extern word pop_window_width INIT(= 480);
+extern word pop_window_height INIT(= 272);
+#else
 extern byte start_fullscreen INIT(= 0);
 extern word pop_window_width INIT(= 640);
 extern word pop_window_height INIT(= 400);
+#endif
 extern byte use_custom_levelset INIT(= 0);
 extern char levelset_name[POP_MAX_PATH];
 extern char mod_data_path[POP_MAX_PATH];
@@ -733,7 +740,11 @@ extern char gamecontrollerdb_file[POP_MAX_PATH] INIT(= "");
 extern byte enable_quicksave INIT(= 1);
 extern byte enable_quicksave_penalty INIT(= 1);
 extern byte enable_replay INIT(= 1);
+#ifdef __PSP__
+extern byte use_hardware_acceleration INIT(= 1);
+#else
 extern byte use_hardware_acceleration INIT(= 2);
+#endif
 extern byte use_correct_aspect_ratio INIT(= 0);
 extern byte use_integer_scaling INIT(= 0);
 extern byte scaling_type INIT(= 0);
@@ -858,6 +869,8 @@ extern custom_options_type custom_defaults INIT(= {
 		.base_speed = 5,
 		.fight_speed = 6,
 		.chomper_speed = 15,
+
+		.no_mouse_in_ending = 0,
 });
 extern custom_options_type* custom INIT(= &custom_defaults);
 
@@ -929,6 +942,18 @@ extern int g_deprecation_number;
 
 extern byte always_use_original_music;
 extern byte always_use_original_graphics;
+
+// controls
+extern int key_left       INIT(= SDL_SCANCODE_LEFT);
+extern int key_right      INIT(= SDL_SCANCODE_RIGHT);
+extern int key_up         INIT(= SDL_SCANCODE_UP);
+extern int key_down       INIT(= SDL_SCANCODE_DOWN);
+extern int key_jump_left  INIT(= SDL_SCANCODE_HOME);
+extern int key_jump_right INIT(= SDL_SCANCODE_PAGEUP);
+extern int key_action     INIT(= SDL_SCANCODE_RSHIFT);
+// menus
+extern int key_enter      INIT(= SDL_SCANCODE_RETURN);
+extern int key_esc        INIT(= SDL_SCANCODE_ESCAPE);
 
 #undef INIT
 #undef extern

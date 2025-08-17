@@ -1,6 +1,6 @@
 /*
 SDLPoP, a port/conversion of the DOS game Prince of Persia.
-Copyright (C) 2013-2023  Dávid Nagy
+Copyright (C) 2013-2025  Dávid Nagy
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -991,17 +991,9 @@ surface_type* make_offscreen_buffer(const rect_type* rect) {
 	// stub
 #ifndef USE_ALPHA
 	// Bit order matches onscreen buffer, good for fading.
-	#ifdef __amigaos4__
 	return SDL_CreateRGBSurface(0, rect->right, rect->bottom, 24, Rmsk, Gmsk, Bmsk, 0);
-	#else
-	return SDL_CreateRGBSurface(0, rect->right, rect->bottom, 24, 0xFF, 0xFF<<8, 0xFF<<16, 0); //RGB888 (little endian)
-	#endif
 #else
-	#ifdef __amigaos4__
 	return SDL_CreateRGBSurface(0, rect->right, rect->bottom, 32, Rmsk, Gmsk, Bmsk, Amsk);
-	#else
-	return SDL_CreateRGBSurface(0, rect->right, rect->bottom, 32, 0xFF, 0xFF<<8, 0xFF<<16, 0xFFu<<24);
-	#endif
 #endif
 	//return surface;
 }
@@ -1214,7 +1206,7 @@ font_type load_font_from_data(/*const*/ rawfont_type* data) {
 	for (int index = 0, chr = data->first_char; chr <= data->last_char; ++index, ++chr) {
 		/*const*/ image_data_type* image_data = (/*const*/ image_data_type*)((/*const*/ byte*)data + SDL_SwapLE16(data->offsets[index]));
 		//image_data->flags=0;
-		if (image_data->height == 0) image_data->height = 1; // HACK: decode_image() returns NULL if height==0.
+		if (image_data->height == SDL_SwapLE16(0)) image_data->height = SDL_SwapLE16(1); // HACK: decode_image() returns NULL if height==0.
 		image_type* image;
 		chtab->images[index] = image = decode_image(image_data, &dat_pal);
 		if (SDL_SetColorKey(image, SDL_TRUE, 0) != 0) {
@@ -1810,19 +1802,10 @@ peel_type* read_peel_from_screen(const rect_type* rect) {
 	//memset(&result, 0, sizeof(result));
 	result->rect = *rect;
 #ifndef USE_ALPHA
-	#ifdef __amigaos4__
 	SDL_Surface* peel_surface = SDL_CreateRGBSurface(0, rect->right - rect->left, rect->bottom - rect->top,
 	                                                 24, Rmsk, Gmsk, Bmsk, 0);
-	#else
-	SDL_Surface* peel_surface = SDL_CreateRGBSurface(0, rect->right - rect->left, rect->bottom - rect->top,
-	                                                 24, 0xFF, 0xFF<<8, 0xFF<<16, 0);
-	#endif
 #else
-	#ifdef __amigaos4__
 	SDL_Surface* peel_surface = SDL_CreateRGBSurface(0, rect->right - rect->left, rect->bottom - rect->top, 32, Rmsk, Gmsk, Bmsk, Amsk);
-	#else
-	SDL_Surface* peel_surface = SDL_CreateRGBSurface(0, rect->right - rect->left, rect->bottom - rect->top, 32, 0xFF, 0xFF<<8, 0xFF<<16, 0xFFu<<24);
-	#endif
 #endif
 	if (peel_surface == NULL) {
 		sdlperror("read_peel_from_screen: SDL_CreateRGBSurface");
@@ -2389,7 +2372,9 @@ sound_buffer_type* convert_digi_sound(sound_buffer_type* digi_buffer) {
 	converted_buffer->converted.length = expanded_length;
 
 	byte* source = waveinfo.samples;
-	short* dest = converted_buffer->converted.samples;
+	//short* dest = converted_buffer->converted.samples;
+	short* dest = malloc(sizeof(short) * converted_buffer->converted.length);
+        converted_buffer->converted.samples = dest;
 
 	for (int i = 0; i < expanded_frames; ++i) {
 		float src_frame_float = i * freq_ratio;
@@ -2524,13 +2509,8 @@ void window_resized() {
 void init_overlay(void) {
 	static bool initialized = false;
 	if (!initialized) {
-#ifdef __amigaos4__
 		overlay_surface = SDL_CreateRGBSurface(0, 320, 200, 32, Rmsk, Gmsk, Bmsk, Amsk);
 		merged_surface = SDL_CreateRGBSurface(0, 320, 200, 24, Rmsk, Gmsk, Bmsk, 0);
-#else
-		overlay_surface = SDL_CreateRGBSurface(0, 320, 200, 32, 0xFF, 0xFF << 8, 0xFF << 16, 0xFFu << 24) ;
-		merged_surface = SDL_CreateRGBSurface(0, 320, 200, 24, 0xFF, 0xFF << 8, 0xFF << 16, 0) ;
-#endif
 		initialized = true;
 	}
 }
@@ -2547,9 +2527,9 @@ void init_scaling(void) {
 	if (scaling_type == 1) {
 		if (!is_renderer_targettexture_supported && onscreen_surface_2x == NULL) {
 #ifdef __amigaos4__
-		overlay_surface = SDL_CreateRGBSurface(0, 320*2, 200*2, 24, Rmsk, Gmsk, Bmsk, 0);
+			overlay_surface = SDL_CreateRGBSurface(0, 320*2, 200*2, 24, Rmsk, Gmsk, Bmsk, 0);
 #else
-			onscreen_surface_2x = SDL_CreateRGBSurface(0, 320*2, 200*2, 24, 0xFF, 0xFF << 8, 0xFF << 16, 0) ;
+			onscreen_surface_2x = SDL_CreateRGBSurface(0, 320*2, 200*2, 24, Rmsk, Gmsk, Bmsk, 0);
 #endif
 		}
 		if (texture_fuzzy == NULL) {
@@ -2663,11 +2643,7 @@ void set_gr_mode(byte grmode) {
 	 * subsequently displayed.
 	 * The function handling the screen updates is update_screen()
 	 * */
-#ifdef __amigaos4__
 	onscreen_surface_ = SDL_CreateRGBSurface(0, 320, 200, 24, Rmsk, Gmsk, Bmsk, 0);
-#else
-	onscreen_surface_ = SDL_CreateRGBSurface(0, 320, 200, 24, 0xFF, 0xFF << 8, 0xFF << 16, 0);
-#endif
 	if (onscreen_surface_ == NULL) {
 		sdlperror("set_gr_mode: SDL_CreateRGBSurface");
 		quit(1);
@@ -3216,17 +3192,13 @@ void blit_xor(SDL_Surface* target_surface, SDL_Rect* dest_rect, SDL_Surface* ima
 		printf("blit_xor: dest_rect and src_rect have different sizes\n");
 		quit(1);
 	}
-#ifdef __amigaos4__
 	SDL_Surface* helper_surface = SDL_CreateRGBSurface(0, dest_rect->w, dest_rect->h, 24, Rmsk, Gmsk, Bmsk, 0);
-#else
-	SDL_Surface* helper_surface = SDL_CreateRGBSurface(0, dest_rect->w, dest_rect->h, 24, 0xFF, 0xFF<<8, 0xFF<<16, 0);
-#endif
 	if (helper_surface == NULL) {
 		sdlperror("blit_xor: SDL_CreateRGBSurface");
 		quit(1);
 	}
 	SDL_Surface* image_24 = SDL_ConvertSurface(image, helper_surface->format, 0);
-	//SDL_CreateRGBSurface(0, src_rect->w, src_rect->h, 24, 0xFF, 0xFF<<8, 0xFF<<16, 0);
+	//SDL_CreateRGBSurface(0, src_rect->w, src_rect->h, 24, Rmsk, Gmsk, Bmsk, 0);
 	if (image_24 == NULL) {
 		sdlperror("blit_xor: SDL_CreateRGBSurface");
 		quit(1);
@@ -3371,8 +3343,8 @@ image_type* method_6_blit_img_to_scr(image_type* image,int xpos,int ypos,int bli
 }
 
 #ifndef USE_COMPAT_TIMER
-int fps = 60;
-float milliseconds_per_tick = (1000.0f / 60.0f);
+int fps = BASE_FPS;
+float milliseconds_per_tick = (1000.0f / (BASE_FPS*1.0f));
 Uint64 timer_last_counter[NUM_TIMERS];
 #endif
 int wait_time[NUM_TIMERS];
@@ -3500,6 +3472,7 @@ void process_events() {
 						key_states[scancode] |= KEYSTATE_HELD | KEYSTATE_HELD_NEW;
 					}
 				} else {
+					last_any_key_scancode = scancode; // for showmessage_any_key
 					key_states[scancode] |= KEYSTATE_HELD | KEYSTATE_HELD_NEW;
 					switch (scancode) {
 						// Keys that are ignored by themselves:
@@ -3598,6 +3571,11 @@ void process_events() {
 				break;
 			case SDL_CONTROLLERDEVICEADDED:
 				SDL_GameControllerOpen(event.cdevice.which);
+				if (gamecontrollerdb_file[0] != '\0') {
+					SDL_GameControllerAddMappingsFromFile(gamecontrollerdb_file);
+				}
+				is_joyst_mode = 1;
+				using_sdl_joystick_interface = 0;
 				break;
 			case SDL_CONTROLLERDEVICEREMOVED:
 				if (sdl_controller_ == SDL_GameControllerFromInstanceID(event.cdevice.which)) {
@@ -3845,7 +3823,7 @@ int do_wait(int timer_index) {
 }
 
 #ifdef USE_COMPAT_TIMER
-SDL_TimerID global_timer = NULL;
+SDL_TimerID global_timer = 0;
 #endif
 // seg009:78E9
 void init_timer(int frequency) {
@@ -3856,12 +3834,12 @@ void init_timer(int frequency) {
 	perf_counters_per_tick = perf_frequency / fps;
 	milliseconds_per_counter = 1000.0f / perf_frequency;
 #else
+	global_timer = SDL_AddTimer(1000/frequency, timer_callback, NULL);
 	if (global_timer != 0) {
 		if (!SDL_RemoveTimer(global_timer)) {
 			sdlperror("init_timer: SDL_RemoveTimer");
 		}
 	}
-	global_timer = SDL_AddTimer(1000/frequency, timer_callback, NULL);
 	if (global_timer == 0) {
 		sdlperror("init_timer: SDL_AddTimer");
 		quit(1);
@@ -4251,6 +4229,7 @@ int has_timer_stopped(int timer_index) {
 #ifdef USE_REPLAY
 	if ((replaying && skipping_replay) || is_validate_mode) return true;
 #endif
+	//PSP: overshoot always too big, 333mhz mandatory to read input!
 	Uint64 current_counter = SDL_GetPerformanceCounter();
 	int ticks_elapsed = (int)((current_counter / perf_counters_per_tick) - (timer_last_counter[timer_index] / perf_counters_per_tick));
 	int overshoot = ticks_elapsed - wait_time[timer_index];

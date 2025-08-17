@@ -1,6 +1,6 @@
 /*
 SDLPoP, a port/conversion of the DOS game Prince of Persia.
-Copyright (C) 2013-2023  Dávid Nagy
+Copyright (C) 2013-2025  Dávid Nagy
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ The authors of this program may be contacted at https://forum.princed.org
 #define POP_MAX_PATH 256
 #define POP_MAX_OPTIONS_SIZE 256
 
-#define SDLPOP_VERSION "1.23"
+#define SDLPOP_VERSION "1.24 RC"
 #define WINDOW_TITLE "Prince of Persia (SDLPoP) v" SDLPOP_VERSION
 
 #if ! (defined WIN32 || _WIN32 || WIN64 || _WIN64)
@@ -291,6 +291,11 @@ The authors of this program may be contacted at https://forum.princed.org
 // See also: https://github.com/NagyD/SDLPoP/pull/274
 #define FIX_FALLING_THROUGH_FLOOR_DURING_SWORD_STRIKE
 
+// Prince can start running when he is standing really close to a wall/gate/tapestry but facing in a different direction.
+// He can either press buttons through gates or falling back when facing right against a closed gate when there is an abiss behind.
+// This fix ensures the logic that makes Prince safe-stepping instead of running is also working when he is facing in the opposite direction.
+#define FIX_TURN_RUN_NEAR_WALL
+
 // When the player (re-)enters the currently shown room, the guard disappears from the screen.
 // This can happen when:
 // * A room is linked to itself (broken link).
@@ -373,17 +378,6 @@ The authors of this program may be contacted at https://forum.princed.org
 #define SDL_JOYSTICK_Y_AXIS 1
 
 
-#ifdef __amigaos4__
-  #define Rmsk 0x00ff0000
-  #define Gmsk 0x0000ff00
-  #define Bmsk 0x000000ff
-  #define Amsk 0xff000000
-#else
-  #define Rmsk 0x000000ff
-  #define Gmsk 0x0000ff00
-  #define Bmsk 0x00ff0000
-  #define Amsk 0xff000000
-#endif
 
 
 #endif

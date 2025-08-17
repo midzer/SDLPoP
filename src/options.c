@@ -1,6 +1,6 @@
 /*
 SDLPoP, a port/conversion of the DOS game Prince of Persia.
-Copyright (C) 2013-2023  Dávid Nagy
+Copyright (C) 2013-2025  Dávid Nagy
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -292,6 +292,7 @@ static int global_ini_callback(const char *section, const char *name, const char
 		process_boolean("fix_falling_through_floor_during_sword_strike", &fixes_saved.fix_falling_through_floor_during_sword_strike);
 		process_boolean("enable_jump_grab", &fixes_saved.enable_jump_grab);
 		process_boolean("fix_register_quick_input", &fixes_saved.fix_register_quick_input);
+		process_boolean("fix_turn_running_near_wall", &fixes_saved.fix_turn_running_near_wall);
 	}
 
 	if (check_ini_section("CustomGameplay")) {
@@ -404,6 +405,7 @@ static int global_ini_callback(const char *section, const char *name, const char
 		process_byte("base_speed", &custom_saved.base_speed, NULL);
 		process_byte("fight_speed", &custom_saved.fight_speed, NULL);
 		process_byte("chomper_speed", &custom_saved.chomper_speed, NULL);
+		process_boolean("no_mouse_in_ending", &custom_saved.no_mouse_in_ending);
 	} // end of section [CustomGameplay]
 
 	// [Level 1], etc.
@@ -759,6 +761,11 @@ void load_dos_exe_modifications(const char* folder_name) {
 		process(&custom_saved.base_speed   , 1, { 0x4F01, 0x65B1, 0x5389, 0x5AC9, 0x4E45, 0x5F75 });
 		process(&custom_saved.fight_speed  , 1, { 0x4EF9, 0x65A9, 0x5381, 0x5AC1, 0x4E3D, 0x5F6D });
 		process(&custom_saved.chomper_speed, 1, { 0x8BBD, 0xA26D, 0x906D, 0x97AD, 0x8B29, 0x9C59 });
+
+		// Skip the mouse in the ending scene. Used in Christmas of Persia.
+		// Details: https://forum.princed.org/viewtopic.php?p=34897#p34897
+		process(&temp_bytes                , 2, { 0x2B8C, 0x423C, 0x2FE4, 0x3724, 0x2B28, 0x3C58 });
+		custom_saved.no_mouse_in_ending = temp_bytes[0] == 0xEB && temp_bytes[1] == 0x27;
 
 		// The order of offsets is: dos_10_packed, dos_10_unpacked, dos_13_packed, dos_13_unpacked, dos_14_packed, dos_14_unpacked
 
